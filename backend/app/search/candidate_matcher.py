@@ -1,16 +1,23 @@
 """
 Candidate matcher: downloads candidate images, runs face detection,
-computes cosine similarity against input embedding, and ranks matches.
+computes cosine similarity against input embedding, filters NSFW/spam, and ranks matches.
 """
 
+import hashlib
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import httpx
 import numpy as np
 
 from backend.app.ml.face_engine import FaceEngine, get_face_engine
+from backend.app.search.domain_filter import (
+    extract_root_domain,
+    get_domain_priority_boost,
+    is_safe_domain,
+    is_social_platform,
+)
 from backend.app.search.providers import SearchResult
 
 logger = logging.getLogger("trace.search.candidate_matcher")
@@ -24,6 +31,7 @@ class MatchedCandidate:
     similarity_score: float  # 0.0 - 1.0 cosine similarity
     calibrated_score: float  # 0.0 - 100.0 calibrated percentage
     face_detected: bool
+    is_social: bool = False
     image_bytes: Optional[bytes] = None
     image_hash: str = ""
 
@@ -38,6 +46,7 @@ class MatchedCandidate:
             "similarity_score": round(self.similarity_score, 4),
             "calibrated_score": round(self.calibrated_score, 2),
             "face_detected": self.face_detected,
+            "is_social": self.is_social,
             "image_hash": self.image_hash,
         }
 
@@ -51,7 +60,7 @@ async def download_image(url: str, timeout: float = 15.0) -> Optional[bytes]:
             timeout=timeout,
             follow_redirects=True,
             headers={
-                "User-Agent": "Mozilla/5.0 (compatible; TRACE-Bot/1.0)",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "Accept": "image/*,*/*;q=0.8",
             },
         ) as client:
@@ -71,51 +80,43 @@ async def match_candidates(
     candidates: List[SearchResult],
     face_engine: Optional[FaceEngine] = None,
     similarity_threshold: float = 0.3,
-    max_candidates: int = 10,
+    max_candidates: int = 15,
 ) -> List[MatchedCandidate]:
     """
-    Download candidate images, detect faces, compute similarity, and rank.
-
-    Args:
-        input_embedding: 512-d unit-normalized embedding of input face.
-        candidates: Search results to evaluate.
-        face_engine: FaceEngine instance (uses singleton if None).
-        similarity_threshold: Minimum cosine similarity to include.
-        max_candidates: Maximum candidates to evaluate.
-
-    Returns:
-        List of MatchedCandidate sorted by similarity (descending).
+    Download candidate images, detect faces, compute similarity, and rank with safety guards.
     """
     if face_engine is None:
         face_engine = get_face_engine()
 
     matched: List[MatchedCandidate] = []
 
-    for i, candidate in enumerate(candidates[:max_candidates]):
-        # Try image_url first, then thumbnail
+    # 1. Filter out unsafe / spam / adult scraper domains
+    safe_candidates = [c for c in candidates if is_safe_domain(c.source_url)]
+
+    for i, candidate in enumerate(safe_candidates[:max_candidates]):
         image_url = candidate.image_url or candidate.thumbnail_url
         if not image_url:
-            logger.debug("Candidate %d has no image URL, skipping", i)
             continue
 
+        domain_label = candidate.domain or extract_root_domain(candidate.source_url)
+        is_social = is_social_platform(candidate.source_url)
+
         logger.info(
-            "Evaluating candidate %d/%d: %s",
+            "Evaluating candidate %d/%d: %s (social=%s)",
             i + 1,
-            min(len(candidates), max_candidates),
-            candidate.domain or candidate.source_url[:60],
+            min(len(safe_candidates), max_candidates),
+            domain_label,
+            is_social,
         )
 
         image_bytes = await download_image(image_url)
+        if image_bytes is None and candidate.thumbnail_url and candidate.thumbnail_url != image_url:
+            image_bytes = await download_image(candidate.thumbnail_url)
+
         if image_bytes is None:
-            # Try thumbnail as fallback
-            if candidate.thumbnail_url and candidate.thumbnail_url != image_url:
-                image_bytes = await download_image(candidate.thumbnail_url)
-            if image_bytes is None:
-                logger.debug("Could not download image for candidate %d", i)
-                continue
+            continue
 
         try:
-            # Detect face in candidate image
             detections = face_engine.detect_faces(image_bytes)
             if not detections:
                 matched.append(
@@ -124,22 +125,19 @@ async def match_candidates(
                         similarity_score=0.0,
                         calibrated_score=0.0,
                         face_detected=False,
+                        is_social=is_social,
                         image_bytes=image_bytes,
                     )
                 )
                 continue
 
-            # Get primary face embedding
             primary = detections[0]
             if primary.embedding is None:
                 continue
 
-            # Compute similarity
             sim_result = FaceEngine.compute_similarity(
                 input_embedding, primary.embedding
             )
-
-            import hashlib
 
             img_hash = hashlib.sha256(image_bytes).hexdigest()
 
@@ -149,6 +147,7 @@ async def match_candidates(
                     similarity_score=sim_result["cosine_similarity"],
                     calibrated_score=sim_result["calibrated_score"],
                     face_detected=True,
+                    is_social=is_social,
                     image_bytes=image_bytes,
                     image_hash=img_hash,
                 )
@@ -158,14 +157,18 @@ async def match_candidates(
             logger.warning("Error processing candidate %d: %s", i, e)
             continue
 
-    # Sort by similarity descending
-    matched.sort(key=lambda m: m.similarity_score, reverse=True)
+    # 2. Ranking algorithm: sort by cosine similarity + social platform priority boost
+    def candidate_rank_score(m: MatchedCandidate) -> float:
+        boost = get_domain_priority_boost(m.search_result.source_url)
+        return m.similarity_score + boost
 
-    # Filter by threshold
+    matched.sort(key=candidate_rank_score, reverse=True)
+
+    # 3. Filter by threshold
     filtered = [m for m in matched if m.similarity_score >= similarity_threshold]
 
     logger.info(
-        "Matched %d candidates (%d above threshold %.2f)",
+        "Matched %d safe candidates (%d above threshold %.2f)",
         len(matched),
         len(filtered),
         similarity_threshold,

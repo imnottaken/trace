@@ -23,6 +23,7 @@ export interface SearchMatch {
   similarity_score: number;
   calibrated_score: number;
   face_detected: boolean;
+  is_social?: boolean;
   image_hash: string;
 }
 

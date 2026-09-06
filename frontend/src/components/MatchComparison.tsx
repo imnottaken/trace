@@ -56,7 +56,9 @@ export default function MatchComparison({ inputImage, match }: MatchComparisonPr
             </div>
             <div className="flex items-center gap-2">
               <span className="annotation-dot" />
-              <span className="font-mono text-xs text-trace-cream">SOURCE FOUND</span>
+              <span className="font-mono text-xs text-trace-cream">
+                {match.is_social ? "SOCIAL MEDIA MATCH" : "SOURCE FOUND"}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="annotation-dot" />
