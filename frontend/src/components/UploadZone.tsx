@@ -43,11 +43,11 @@ export default function UploadZone({ onFileSelect, onBeginTrace, disabled }: Upl
   );
 
   return (
-    <div className="w-full max-w-2xl">
+    <div className="w-full max-w-md mx-auto lg:ml-auto">
       <div
-        className={`upload-zone relative p-8 sm:p-12 text-center cursor-pointer transition-all shadow-[6px_6px_0px_#082F1C] ${
+        className={`upload-zone relative p-6 sm:p-8 text-center cursor-pointer transition-all shadow-[6px_6px_0px_#082F1C] border-3 ${
           dragOver ? "drag-over border-trace-pink" : "border-trace-yellow"
-        } ${preview ? "p-6" : ""}`}
+        }`}
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -65,43 +65,48 @@ export default function UploadZone({ onFileSelect, onBeginTrace, disabled }: Upl
         />
 
         {preview ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <img
               src={preview}
-              alt="Uploaded"
-              className="max-h-72 mx-auto border-3 border-trace-ink shadow-[4px_4px_0px_#082F1C]"
+              alt="Uploaded Target"
+              className="max-h-48 sm:max-h-56 mx-auto border-2 border-trace-ink object-cover shadow-[3px_3px_0px_#082F1C]"
             />
-            <div className="inline-block bg-trace-ink text-trace-cream px-3 py-1 font-mono text-xs border border-trace-yellow/30">
+            <div className="inline-block bg-trace-ink text-trace-cream px-2.5 py-0.5 font-mono text-[11px] border border-trace-yellow/30">
               {file?.name} · {((file?.size || 0) / 1024).toFixed(1)} KB
             </div>
+            <p className="font-mono text-[11px] text-trace-yellow underline">
+              Click to replace image
+            </p>
           </div>
         ) : (
-          <div className="space-y-4 py-4">
-            <div className="text-5xl text-trace-yellow">⬡</div>
-            <p className="font-display font-bold text-2xl sm:text-3xl text-trace-yellow uppercase tracking-tight">
+          <div className="space-y-3 py-4">
+            <div className="text-4xl text-trace-yellow">⬡</div>
+            <p className="font-display font-black text-xl sm:text-2xl text-trace-yellow uppercase tracking-tight">
               DROP TARGET IMAGE
             </p>
-            <p className="font-mono text-xs sm:text-sm text-trace-cream/70">
+            <p className="font-mono text-xs text-trace-cream/80">
               or <span className="underline text-trace-yellow font-bold">CLICK TO BROWSE</span>
             </p>
-            <p className="font-mono text-[11px] text-trace-cream/50 uppercase tracking-wider mt-4">
-              Supports JPG, PNG, WebP · Single Face Portrait Recommended
-            </p>
+            <div className="pt-2">
+              <span className="inline-block font-mono text-[10px] text-trace-yellow/70 bg-trace-ink px-2 py-0.5 border border-trace-yellow/20 uppercase">
+                JPG · PNG · WebP · Single Face
+              </span>
+            </div>
           </div>
         )}
       </div>
 
       {file && (
         <motion.button
-          className="w-full mt-6 py-4 bg-trace-yellow text-trace-ink font-display font-black text-xl sm:text-2xl uppercase
-                     border-3 border-trace-ink shadow-[6px_6px_0px_#082F1C] hover:bg-trace-pink hover:text-white hover:translate-x-1 hover:translate-y-1 hover:shadow-[3px_3px_0px_#082F1C]
+          className="w-full mt-4 py-3.5 bg-trace-yellow text-trace-ink font-display font-black text-lg sm:text-xl uppercase
+                     border-3 border-trace-ink shadow-[5px_5px_0px_#082F1C] hover:bg-trace-pink hover:text-white hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0px_#082F1C]
                      transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={(e) => {
             e.stopPropagation();
             onBeginTrace();
           }}
           disabled={disabled}
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
           BEGIN TRACE →
