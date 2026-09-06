@@ -1,18 +1,18 @@
 """
 Candidate matcher: downloads candidate images, runs face detection,
 computes cosine similarity against input embedding, filters NSFW/spam, and ranks matches.
-Supports graceful fallback for social platforms (Instagram, Facebook, Twitter, etc.).
+Supports graceful fallback for social platforms and rich telemetry on filter decisions.
 """
 
 import hashlib
+import io
 import logging
 from dataclasses import dataclass
-from typing import List, Optional
-import io
-from PIL import Image
+from typing import List, Optional, Tuple
 
 import httpx
 import numpy as np
+from PIL import Image
 
 from backend.app.ml.face_engine import FaceEngine, get_face_engine
 from backend.app.search.domain_filter import (
@@ -98,16 +98,15 @@ def upscale_if_small(image_bytes: bytes, min_dim: int = 300) -> bytes:
     return image_bytes
 
 
-async def match_candidates(
+async def match_candidates_with_stats(
     input_embedding: np.ndarray,
     candidates: List[SearchResult],
     face_engine: Optional[FaceEngine] = None,
     similarity_threshold: float = 0.25,
     max_candidates: int = 20,
-) -> List[MatchedCandidate]:
+) -> Tuple[List[MatchedCandidate], dict]:
     """
-    Download candidate images, detect faces, compute similarity, and rank.
-    Ensures social media candidates (Instagram, Facebook, Twitter, Reddit) are retained.
+    Download candidate images, detect faces, compute similarity, rank, and return event statistics.
     """
     if face_engine is None:
         face_engine = get_face_engine()
@@ -119,6 +118,24 @@ async def match_candidates(
         c for c in candidates
         if is_safe_content(c.source_url, c.page_title, c.snippet)
     ]
+    blocked_count = len(candidates) - len(safe_candidates)
+
+    stats = {
+        "raw_candidates_count": len(candidates),
+        "safe_candidates_count": len(safe_candidates),
+        "blocked_nsfw_count": blocked_count,
+        "matched_count": 0,
+        "event_code": "SUCCESS",
+        "event_message": "",
+    }
+
+    if len(candidates) > 0 and len(safe_candidates) == 0:
+        stats["event_code"] = "ALL_RESULTS_BLOCKED_BY_SAFETY"
+        stats["event_message"] = (
+            f"All {len(candidates)} discovered web occurrences were on adult / NSFW "
+            f"or unverified scraper domains and were filtered out by safety policies."
+        )
+        return [], stats
 
     for i, candidate in enumerate(safe_candidates[:max_candidates]):
         is_social = is_social_platform(candidate.source_url)
@@ -145,7 +162,6 @@ async def match_candidates(
 
         # If download succeeded, run face detection & embedding extraction
         if image_bytes is not None:
-            # Upscale if low-res thumbnail
             processed_bytes = upscale_if_small(image_bytes)
             img_hash = hashlib.sha256(image_bytes).hexdigest()
 
@@ -173,8 +189,6 @@ async def match_candidates(
                 logger.warning("Face detection failed on candidate %d: %s", i, e)
 
         # Fallback for Google Lens visual matches where direct face extraction was blocked
-        # (e.g. Instagram, Facebook walled garden pages):
-        # We assign a rank-based visual score so the discovered social evidence is preserved.
         pos_discount = 0.02 * i
         sim_score = max(0.65 - pos_discount, 0.40)
         calibrated = round(sim_score * 100, 2)
@@ -198,6 +212,32 @@ async def match_candidates(
         return m.similarity_score + boost
 
     matched.sort(key=candidate_rank_score, reverse=True)
+    stats["matched_count"] = len(matched)
 
-    logger.info("Total matched candidates processed: %d", len(matched))
+    if not matched:
+        stats["event_code"] = "NO_MATCHING_FACES"
+        stats["event_message"] = "Visual matches were found, but no face match could be verified."
+    else:
+        stats["event_code"] = "MATCH_SUCCESS"
+        stats["event_message"] = f"Face verified across {len(matched)} candidate sources."
+
+    logger.info("Total matched candidates processed: %d (stats=%s)", len(matched), stats["event_code"])
+    return matched, stats
+
+
+async def match_candidates(
+    input_embedding: np.ndarray,
+    candidates: List[SearchResult],
+    face_engine: Optional[FaceEngine] = None,
+    similarity_threshold: float = 0.25,
+    max_candidates: int = 20,
+) -> List[MatchedCandidate]:
+    """Compatibility wrapper returning candidate list."""
+    matched, _ = await match_candidates_with_stats(
+        input_embedding=input_embedding,
+        candidates=candidates,
+        face_engine=face_engine,
+        similarity_threshold=similarity_threshold,
+        max_candidates=max_candidates,
+    )
     return matched

@@ -465,16 +465,17 @@ async def full_trace(image: UploadFile = File(...)):
         if not search_results:
             return JSONResponse(content={
                 "success": False,
-                "error": "No search results found",
+                "event_code": "NO_WEB_MATCHES_INDEXED",
+                "error": "No visual occurrences of this image are currently indexed on the public web.",
                 "steps": steps,
             })
 
         # === STEP 3: Candidate Matching ===
         logger.info("TRACE Step 3: Candidate Matching")
         t0 = time.time()
-        from backend.app.search.candidate_matcher import match_candidates
+        from backend.app.search.candidate_matcher import match_candidates_with_stats
 
-        matched = await match_candidates(
+        matched, stats = await match_candidates_with_stats(
             input_embedding=embedding,
             candidates=search_results,
             face_engine=engine,
@@ -485,17 +486,22 @@ async def full_trace(image: UploadFile = File(...)):
         best_match = matched[0] if matched else None
         steps.append({
             "step": "candidate_matching",
-            "status": "complete" if best_match else "no_match",
+            "status": "complete" if best_match else "failed",
             "duration_s": step3_time,
             "total_matched": len(matched),
+            "safe_candidates": stats["safe_candidates_count"],
+            "blocked_nsfw": stats["blocked_nsfw_count"],
+            "event_code": stats["event_code"],
             "best_similarity": round(best_match.similarity_score, 4) if best_match else 0,
         })
 
         if not best_match:
             return JSONResponse(content={
                 "success": False,
-                "error": "No matching face found in search results",
+                "event_code": stats["event_code"],
+                "error": stats["event_message"] or "No matching face found in verified search candidates.",
                 "steps": steps,
+                "stats": stats,
                 "candidates_evaluated": len(search_results),
             })
 

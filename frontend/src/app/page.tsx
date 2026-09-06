@@ -236,23 +236,37 @@ export default function Home() {
               investigationId={investigationId}
             />
 
-            {/* Error Display */}
+            {/* Event-driven Status Banner */}
             {phase === "error" && error && (
               <motion.div
-                className="max-w-3xl mx-auto mt-8 p-6 border-2 border-trace-pink"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                className="max-w-3xl mx-auto mt-8 p-6 bg-trace-ink border-3 border-trace-pink shadow-[8px_8px_0px_#082F1C]"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
               >
-                <h3 className="font-display font-bold text-xl text-trace-pink mb-2">
-                  INVESTIGATION INTERRUPTED
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-3 h-3 bg-trace-pink rounded-full inline-block animate-ping" />
+                  <span className="font-mono text-xs font-bold text-trace-pink uppercase tracking-widest">
+                    INVESTIGATION STATUS REPORT
+                  </span>
+                </div>
+                <h3 className="font-display font-black text-2xl text-trace-yellow mb-2 uppercase">
+                  {error.includes("safety") || error.includes("NSFW") || error.includes("adult")
+                    ? "DISCOVERED SITES FILTERED BY SAFETY POLICY"
+                    : error.includes("indexed")
+                    ? "ZERO PUBLIC OCCURRENCES INDEXED"
+                    : "INVESTIGATION NOT COMPLETED"}
                 </h3>
-                <p className="font-mono text-sm text-trace-cream/70">{error}</p>
-                <button
-                  onClick={handleReset}
-                  className="mt-4 px-6 py-2 bg-trace-yellow text-trace-ink font-mono font-bold text-sm border-2 border-trace-ink hover:bg-trace-pink hover:text-white transition-colors"
-                >
-                  START NEW TRACE
-                </button>
+                <p className="font-mono text-sm text-trace-cream/90 leading-relaxed bg-trace-green/40 p-4 border border-trace-yellow/20">
+                  {error}
+                </p>
+                <div className="mt-6 flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={handleReset}
+                    className="px-6 py-3 bg-trace-yellow text-trace-ink font-mono font-black text-xs uppercase border-3 border-trace-ink shadow-[4px_4px_0px_#082F1C] hover:bg-trace-pink hover:text-white transition-all"
+                  >
+                    ← TRY ANOTHER IMAGE
+                  </button>
+                </div>
               </motion.div>
             )}
           </motion.div>
