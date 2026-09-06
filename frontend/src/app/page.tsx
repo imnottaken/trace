@@ -33,19 +33,171 @@ export default function Home() {
     { id: "verify", label: "Verification", status: "queued" },
   ]);
 
-  const updateStep = useCallback(
-    (id: string, status: TimelineStep["status"], detail?: string) => {
-      setSteps((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, status, detail } : s))
-      );
-    },
-    []
-  );
-
   const handleFileSelect = useCallback((f: File) => {
     setFile(f);
     setImagePreview(URL.createObjectURL(f));
   }, []);
+
+  const deriveTimelineSteps = useCallback(
+    (result: TraceResult | null, fallbackError?: string): TimelineStep[] => {
+      const baseSteps: TimelineStep[] = [
+        { id: "face", label: "Face Analysis", status: "queued" },
+        { id: "search", label: "Web Discovery", status: "queued" },
+        { id: "match", label: "Candidate Matching", status: "queued" },
+        { id: "fingerprint", label: "Content Fingerprint", status: "queued" },
+        { id: "proof", label: "Blockchain Proof", status: "queued" },
+        { id: "verify", label: "Verification", status: "queued" },
+      ];
+
+      if (!result) return baseSteps;
+
+      const serverSteps = result.steps || [];
+      const serverStepMap = new Map<string, (typeof serverSteps)[number]>();
+      serverSteps.forEach((s) => serverStepMap.set(s.step, s));
+
+      const stepKeys = [
+        { id: "face", serverName: "face_analysis" },
+        { id: "search", serverName: "web_search" },
+        { id: "match", serverName: "candidate_matching" },
+        { id: "fingerprint", serverName: "fingerprint" },
+        { id: "proof", serverName: "blockchain_registration" },
+        { id: "verify", serverName: "verification" },
+      ];
+
+      let hasFailed = false;
+
+      return stepKeys.map(({ id, serverName }, index) => {
+        const defaultLabel = baseSteps[index].label;
+
+        if (hasFailed) {
+          return {
+            id,
+            label: defaultLabel,
+            status: "skipped",
+            detail: "Skipped",
+          };
+        }
+
+        const s = serverStepMap.get(serverName);
+
+        if (!s) {
+          return {
+            id,
+            label: defaultLabel,
+            status: "skipped",
+            detail: "Not executed",
+          };
+        }
+
+        if (
+          s.status === "failed" ||
+          s.status === "no_results" ||
+          s.status === "no_match"
+        ) {
+          hasFailed = true;
+          let detail =
+            (s.error as string | undefined) ||
+            result.error ||
+            fallbackError ||
+            "Failed";
+          if (id === "face") {
+            detail = (s.error as string | undefined) || "No detectable face in image";
+          } else if (id === "search") {
+            detail = result.error || "No visual occurrences indexed on web";
+          } else if (id === "match") {
+            detail = result.error || "No candidate matched face embedding";
+          } else if (id === "proof") {
+            detail = (s.error as string | undefined) || "Blockchain transaction failed";
+          }
+          return {
+            id,
+            label: defaultLabel,
+            status: "failed",
+            detail,
+          };
+        }
+
+        if (s.status === "skipped") {
+          return {
+            id,
+            label: defaultLabel,
+            status: "skipped",
+            detail: (s.reason as string | undefined) || "Skipped",
+          };
+        }
+
+        if (s.status === "complete" || s.status === "verified") {
+          let detail = "Completed";
+          if (id === "face") {
+            const fc =
+              (s.face_count as number | undefined) ||
+              result.result?.face_analysis?.face_count ||
+              1;
+            const conf =
+              s.confidence !== undefined
+                ? (Number(s.confidence) * 100).toFixed(0)
+                : result.result?.face_analysis
+                ? (result.result.face_analysis.confidence * 100).toFixed(0)
+                : "100";
+            detail = `${fc} face(s) · ${conf}% confidence`;
+          } else if (id === "search") {
+            const cCount =
+              (s.candidates_found as number | undefined) !== undefined
+                ? (s.candidates_found as number)
+                : result.result?.all_matches?.length || 0;
+            const prov =
+              (s.provider as string | undefined) ||
+              result.result?.search_provider ||
+              "Google Lens";
+            detail = `${cCount} candidates via ${prov}`;
+          } else if (id === "match") {
+            const sim = result.result?.best_match
+              ? (result.result.best_match.similarity_score * 100).toFixed(1)
+              : s.best_similarity !== undefined
+              ? (Number(s.best_similarity) * 100).toFixed(1)
+              : "100";
+            detail = `Top match: ${sim}% similarity`;
+          } else if (id === "fingerprint") {
+            const hash =
+              (s.content_hash as string | undefined) ||
+              result.result?.fingerprint?.content_hash ||
+              "";
+            detail = hash
+              ? `SHA-256: ${hash.slice(0, 16)}...`
+              : "SHA-256 computed";
+          } else if (id === "proof") {
+            const block =
+              (s.block_number as number | undefined) ||
+              result.result?.blockchain?.block_number;
+            const net =
+              (s.network as string | undefined) ||
+              result.result?.blockchain?.network ||
+              "EVM";
+            detail = block ? `Block #${block} · ${net}` : "Evidence notarized";
+          } else if (id === "verify") {
+            detail = result.result?.verification?.exists
+              ? "Content integrity confirmed"
+              : "On-chain proof verified";
+          }
+
+          return {
+            id,
+            label: defaultLabel,
+            status: "complete",
+            detail,
+          };
+        }
+
+        return {
+          id,
+          label: defaultLabel,
+          status: "failed",
+          detail: "Unexpected status",
+        };
+      });
+    },
+    []
+  );
 
   const handleBeginTrace = useCallback(async () => {
     if (!file) return;
@@ -53,111 +205,71 @@ export default function Home() {
     setPhase("investigating");
     setError("");
 
-    updateStep("face", "scanning", "Detecting faces...");
+    setSteps([
+      {
+        id: "face",
+        label: "Face Analysis",
+        status: "scanning",
+        detail: "Detecting facial geometry & 512-d embedding...",
+      },
+      { id: "search", label: "Web Discovery", status: "queued" },
+      { id: "match", label: "Candidate Matching", status: "queued" },
+      { id: "fingerprint", label: "Content Fingerprint", status: "queued" },
+      { id: "proof", label: "Blockchain Proof", status: "queued" },
+      { id: "verify", label: "Verification", status: "queued" },
+    ]);
+
+    const searchTimer = setTimeout(() => {
+      setSteps((prev) =>
+        prev.map((s) => {
+          if (s.id === "face")
+            return {
+              ...s,
+              status: "complete",
+              detail: "Face detected & embedding extracted",
+            };
+          if (s.id === "search")
+            return {
+              ...s,
+              status: "scanning",
+              detail: "Searching Google Lens with SafeSearch...",
+            };
+          return s;
+        })
+      );
+    }, 800);
 
     try {
-      const stepNames = ["face", "search", "match", "fingerprint", "proof", "verify"];
-      let currentStep = 0;
+      const result = await runFullTrace(file);
+      clearTimeout(searchTimer);
 
-      const tracePromise = runFullTrace(file);
-
-      const animateInterval = setInterval(() => {
-        currentStep++;
-        if (currentStep < stepNames.length) {
-          updateStep(stepNames[currentStep - 1], "complete");
-          const labels: Record<string, string> = {
-            search: "Searching Google Lens...",
-            match: "Comparing ArcFace embeddings...",
-            fingerprint: "Computing SHA-256...",
-            proof: "Recording evidence on EVM...",
-            verify: "Confirming on-chain record...",
-          };
-          updateStep(
-            stepNames[currentStep],
-            "scanning",
-            labels[stepNames[currentStep]] || "Processing..."
-          );
-        }
-      }, 1800);
-
-      const result = await tracePromise;
-      clearInterval(animateInterval);
+      const finalSteps = deriveTimelineSteps(result);
+      setSteps(finalSteps);
+      setTraceResult(result);
 
       if (result.success && result.result) {
-        const r = result.result;
-        updateStep(
-          "face",
-          "complete",
-          `${r.face_analysis.face_count} face(s) · ${(r.face_analysis.confidence * 100).toFixed(0)}% confidence`
-        );
-        updateStep(
-          "search",
-          "complete",
-          `${r.all_matches.length} candidates via ${r.search_provider}`
-        );
-        updateStep(
-          "match",
-          "complete",
-          `Top: ${(r.best_match.similarity_score * 100).toFixed(1)}% similarity`
-        );
-        updateStep(
-          "fingerprint",
-          "complete",
-          `SHA-256: ${r.fingerprint.content_hash.slice(0, 16)}...`
-        );
-
-        if (r.blockchain) {
-          updateStep(
-            "proof",
-            "complete",
-            `Block #${r.blockchain.block_number} · ${r.blockchain.network}`
-          );
-        } else {
-          updateStep("proof", "skipped", "Blockchain not configured");
-        }
-
-        if (r.verification?.exists) {
-          updateStep("verify", "complete", "Content integrity confirmed");
-        } else if (r.blockchain) {
-          updateStep("verify", "complete", "On-chain record verified");
-        } else {
-          updateStep("verify", "skipped", "No blockchain record");
-        }
-
-        setTraceResult(result);
         setPhase("complete");
       } else {
-        const failedStep = result.steps?.find(
-          (s) => s.status === "failed" || s.status === "no_results" || s.status === "no_match"
-        );
-        if (failedStep) {
-          const stepMap: Record<string, string> = {
-            face_analysis: "face",
-            web_search: "search",
-            candidate_matching: "match",
-            fingerprint: "fingerprint",
-            blockchain_registration: "proof",
-            verification: "verify",
-          };
-          const mappedId = stepMap[failedStep.step] || failedStep.step;
-          updateStep(mappedId, "failed", result.error || "No results");
-        }
-
-        setError(result.error || "Pipeline did not complete successfully");
-        setTraceResult(result);
+        setError(result.error || "Investigation did not complete successfully");
         setPhase("error");
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "An unexpected error occurred";
+      clearTimeout(searchTimer);
+      const msg =
+        e instanceof Error ? e.message : "An unexpected error occurred";
       setError(msg);
       setSteps((prev) =>
-        prev.map((s) =>
-          s.status === "scanning" ? { ...s, status: "failed", detail: msg } : s
-        )
+        prev.map((s) => {
+          if (s.status === "scanning")
+            return { ...s, status: "failed", detail: msg };
+          if (s.status === "queued")
+            return { ...s, status: "skipped", detail: "Skipped" };
+          return s;
+        })
       );
       setPhase("error");
     }
-  }, [file, updateStep]);
+  }, [file, deriveTimelineSteps]);
 
   const handleReset = useCallback(() => {
     setPhase("landing");
