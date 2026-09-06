@@ -133,6 +133,7 @@ class SerpAPIProvider(SearchProvider):
                     "url": image_public_url,
                     "api_key": self.api_key,
                     "hl": "en",
+                    "safe": "active",
                 }
                 response = await client.get(self.base_url, params=params)
 

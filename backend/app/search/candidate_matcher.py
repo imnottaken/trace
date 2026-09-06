@@ -90,8 +90,11 @@ async def match_candidates(
 
     matched: List[MatchedCandidate] = []
 
-    # 1. Filter out unsafe / spam / adult scraper domains
-    safe_candidates = [c for c in candidates if is_safe_domain(c.source_url)]
+    # 1. Filter out unsafe / spam / adult scraper domains and NSFW subreddits/titles
+    safe_candidates = [
+        c for c in candidates
+        if is_safe_content(c.source_url, c.page_title, c.snippet)
+    ]
 
     for i, candidate in enumerate(safe_candidates[:max_candidates]):
         image_url = candidate.image_url or candidate.thumbnail_url
