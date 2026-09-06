@@ -9,10 +9,13 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-05472A?style=for-the-badge&logo=fastapi&logoColor=F7E000)](backend/)
 [![Next.js](https://img.shields.io/badge/Next.js-14_App_Router-FF0A87?style=for-the-badge&logo=next.js&logoColor=white)](frontend/)
 [![InsightFace](https://img.shields.io/badge/InsightFace-ArcFace_512d-082F1C?style=for-the-badge&logo=python&logoColor=F7E000)](backend/app/ml/)
+[![Vercel](https://img.shields.io/badge/Vercel-Live_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://frontend-zeta-seven-zznxwxx7wg.vercel.app)
 [![Polygon](https://img.shields.io/badge/Polygon-Amoy_Testnet-7B3FE4?style=for-the-badge&logo=polygon&logoColor=white)](https://amoy.polygonscan.com/)
 
 **A Digital Investigation &amp; Content Provenance Tool**  
 *Built for Hackers House Goa 2026 — Task 3: Face Identification &amp; Blockchain Verification*
+
+🌐 **Live Vercel Deployment:** [https://frontend-zeta-seven-zznxwxx7wg.vercel.app](https://frontend-zeta-seven-zznxwxx7wg.vercel.app)
 
 ---
 
