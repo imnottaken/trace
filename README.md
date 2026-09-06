@@ -12,10 +12,11 @@
 [![Vercel](https://img.shields.io/badge/Vercel-Live_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://frontend-zeta-seven-zznxwxx7wg.vercel.app)
 [![Polygon](https://img.shields.io/badge/Polygon-Amoy_Testnet-7B3FE4?style=for-the-badge&logo=polygon&logoColor=white)](https://amoy.polygonscan.com/)
 
-**A Digital Investigation &amp; Content Provenance Tool**  
-*Built for Hackers House Goa 2026 — Task 3: Face Identification &amp; Blockchain Verification*
+**A Digital Investigation & Content Provenance Tool**  
+*Built for Hackers House Goa 2026 — Task 3: Face Identification & Blockchain Verification*
 
-🌐 **Live Vercel Deployment:** [https://frontend-zeta-seven-zznxwxx7wg.vercel.app](https://frontend-zeta-seven-zznxwxx7wg.vercel.app)
+🌐 **Live Vercel Deployment:** [https://frontend-zeta-seven-zznxwxx7wg.vercel.app](https://frontend-zeta-seven-zznxwxx7wg.vercel.app)  
+📦 **GitHub Repository:** [https://github.com/imnottaken/trace](https://github.com/imnottaken/trace)
 
 ---
 
@@ -27,7 +28,13 @@
 > **FACE RECOGNITION VERIFIES VISUAL MATCH.**  
 > **BLOCKCHAIN PROVES CONTENT INTEGRITY.**
 
-TRACE is designed with a forensics-first mindset. It **never claims to identify the real-world identity/name of an individual**. Instead, it computes mathematical visual similarity scores between discovered public sources and anchors immutable cryptographic fingerprints to a public blockchain.
+TRACE is built with a strict digital forensics framing. It **never claims to identify the real-world legal identity or personal name of an individual**. Instead, it:
+1. Detects facial geometry and projects faces into a 512-dimensional Euclidean feature space.
+2. Performs reverse visual search over public search indices (Google Lens & Bing Visual Search).
+3. Downloads discovered candidates, computes pairwise cosine similarity, and isolates high-confidence matches.
+4. Generates deterministic RFC 8785 canonical JSON composite hashes.
+5. Notarizes content provenance onto an immutable EVM smart contract (`TraceProof.sol`) on Polygon Amoy / Ethereum.
+6. Verifies tamper resistance with bit-for-bit integrity re-queries.
 
 ---
 
@@ -35,35 +42,38 @@ TRACE is designed with a forensics-first mindset. It **never claims to identify 
 
 ![TRACE Pipeline Architecture](docs/assets/pipeline_architecture.svg)
 
-### The 6-Stage Provenance Loop:
+### The 7-Stage Provenance Loop:
 
 ```
-[01. UPLOAD IMAGE]
+[01. UPLOAD IMAGE] ──────────► Sub-pixel alignment & pre-flight inspection
        │
        ▼
 [02. FACE SCAN] ────────────► SCRFD Detection + 512-d ArcFace Unit Vector
        │
        ▼
-[03. WEB SEARCH] ───────────► Google Lens Reverse Search (SerpAPI / Bing)
+[03. CATBOX INGESTION] ──────► Ephemeral raw binary hosting for Google Lens crawler
        │
        ▼
-[04. VISUAL MATCH] ─────────► Candidate Download + Cosine Similarity Ranking
+[04. GOOGLE LENS SEARCH] ────► SerpAPI reverse search with safe="active" & domain safety filters
        │
        ▼
-[05. FINGERPRINT] ──────────► Deterministic SHA-256 (RFC 8785 Canonical JSON)
+[05. VISUAL MATCH] ─────────► Anti-hotlinking candidate download + Lanczos upscaled ArcFace cosine rank
        │
        ▼
-[06. ON-CHAIN NOTARIZATION] ► TraceProof.sol (EVM / Polygon Amoy)
+[06. CONTENT FINGERPRINT] ──► SHA-256 binary hash + RFC 8785 canonical composite digest
        │
        ▼
-[07. TAMPER VERIFICATION] ──► On-Chain Re-Query & Bit-for-Bit Integrity Check
+[07. ON-CHAIN NOTARIZATION] ► Immutable Proof registration in TraceProof.sol (EVM / Polygon Amoy)
+       │
+       ▼
+[08. TAMPER AUDIT] ─────────► On-chain cryptographic lookup & bit-for-bit integrity validation
 ```
 
 ---
 
 ## 🎨 Visual Design System (Goa Poster Forensics)
 
-The user interface rejects generic SaaS dashboards, purple AI glassmorphism, and standard crypto templates. It is inspired by **contemporary Goan screen-printed street posters** mixed with digital forensics tooling:
+The user interface deliberately rejects generic SaaS dashboards, purple glassmorphism, and boilerplate crypto templates. It is inspired by **contemporary Goan screen-printed street posters** mixed with digital forensics terminal tooling:
 
 | Token | Hex Code | Visual Role |
 |---|---|---|
@@ -73,33 +83,59 @@ The user interface rejects generic SaaS dashboards, purple AI glassmorphism, and
 | **Ink** | `#082F1C` | Dark screen-print borders & evidence containers |
 | **Cream** | `#F5E7A1` | Metadata receipts, data badges & subheadings |
 
+### Viewport-Fit Architecture
+The entire investigation cockpit is engineered as a **100% non-scrollable, viewport-fit layout** (`h-screen overflow-hidden`). All timeline stages, candidate previews, confidence scores, transaction hashes, and tamper verification blocks fit dynamically within the screen height without layout shifts.
+
 ---
 
-## 🔬 Technical Implementation
+## 🔬 Core Engineering Innovations
 
-### 1. Face ML Engine (`backend/app/ml/`)
-- **Detection**: SCRFD (Sample and Computation Redistribution for Face Detection) with sub-pixel landmark localization.
+### 1. Google Lens Ingestion via Ephemeral Catbox Proxy
+Google Lens requires public image URLs for visual feature extraction. To allow arbitrary local image uploads:
+- The backend ephemerally registers image bytes via `catbox.moe` API (`https://catbox.moe/user/api.php`).
+- The unblocked direct binary link is supplied to SerpAPI's `google_lens` engine.
+- Results are retrieved directly from Google's reverse index with zero mock data.
+
+### 2. Multi-Layer Domain & NSFW Content Filter
+Search engines often return scraper spam, adult websites, or NSFW subreddit links for portrait queries. TRACE enforces a multi-tier safety pipeline (`backend/app/search/domain_filter.py`):
+- **SafeSearch**: Queries Google Lens with `safe="active"`.
+- **Domain Blacklist**: Blocks 50+ adult domains and scraper networks.
+- **Subreddit Filtering**: Intercepts Reddit URLs and filters out adult subreddits (`r/gonewild`, `r/nsfw`, `r/RealGirls`, etc.).
+- **Social & News Whitelist**: Prioritizes verified platforms (Instagram, Reddit, X/Twitter, Wikipedia, LinkedIn, YouTube, news portals).
+
+### 3. Instagram & Walled-Garden Fallback Pipeline
+Social platforms like Instagram block direct bot image downloads (`403 Forbidden` / anti-hotlinking):
+- TRACE detects hotlink-protected sources and automatically falls back to **Google's cached thumbnail proxy** (`encrypted-tbn0.gstatic.com`).
+- Low-resolution thumbnails undergo **Lanczos sub-pixel upscaling** before being passed to the SCRFD detector.
+- Ensures social media discoveries are successfully matched without 403 download failures.
+
+### 4. Event-Accurate Telemetry & Diagnostics
+Instead of misleading generic errors, TRACE returns granular event codes and explanations:
+- `MATCH_CONFIRMED`: Face matched with similarity score $\ge 60\%$.
+- `LOW_CONFIDENCE_MATCH`: Candidates found but below threshold.
+- `ALL_RESULTS_BLOCKED_BY_SAFETY`: Sources found were blocked by NSFW/safety filter.
+- `NO_USABLE_CANDIDATE_IMAGES`: Source pages found but image hotlinking prevented downloads.
+- `NO_CANDIDATE_FACES_DETECTED`: External images did not contain detectable faces.
+- `TAMPER_DETECTED`: Re-uploaded content hash mismatch vs. blockchain record.
+
+### 5. Face ML Engine (`backend/app/ml/`)
+- **Detection**: SCRFD (Sample and Computation Redistribution for Face Detection) with 5-point facial landmark alignment.
 - **Embedding**: 512-dimensional ArcFace unit-normalized vectors ($\|v\|_2 = 1.0 \pm 1e-4$).
-- **Visual Similarity**: Calibrated cosine similarity metrics:
+- **Calibrated Similarity**:
   $$\text{Cosine Similarity} = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\| \|\mathbf{v}\|}$$
   $$\text{Calibrated Match Score} = \max\left(0.0, \min\left(100.0, \frac{\text{sim} - 0.2}{0.8} \times 100\right)\right)$$
-- **Guards**: Enforces single-face analysis, flagging zero-face inputs or rejecting multi-face ambiguity.
 
-### 2. Live Reverse Image Search (`backend/app/search/`)
-- **Zero Mock Data in Production**: Genuine web search via Google Lens (SerpAPI engine) or Microsoft Bing Visual Search API v7.
-- **Candidate Processing**: Downloads accessible candidates, crops faces, computes candidate embeddings, and ranks by visual match score.
+### 6. RFC 8785 Canonical JSON Fingerprinting (`backend/app/blockchain/fingerprint.py`)
+Deterministic composite digests guarantee **100% byte-for-byte reproducibility** between Python and TypeScript:
+```json
+{"image_sha256":"fe5a127a...","source_url":"https://example.com/post","timestamp":1788653519,"title":"Source Title"}
+```
 
-### 3. Two-Tier Content Fingerprinting (`contracts/lib/` & `backend/app/blockchain/`)
-- **Image Hash**: Raw binary SHA-256 digest of discovered image bytes.
-- **Composite Metadata Digest**: RFC 8785 canonical JSON serialization ensuring **100% byte-for-byte parity across Python and TypeScript**:
-  ```json
-  {"image_sha256":"fe5a127a...","source_url":"https://example.com/post","timestamp":1788653519,"title":"Source Title"}
-  ```
-
-### 4. Smart Contract Provenance (`contracts/contracts/TraceProof.sol`)
-- Gas-optimized packed storage struct recording `contentHash`, `sourceReference`, `timestamp`, `blockNumber`, and `recordedBy`.
-- Write-once immutability: Reverts on duplicate hash registration (`EvidenceAlreadyExists`).
-- View queries: `getEvidence()`, `verifyEvidence()`, and indexed audit enumerations.
+### 7. Immutable Smart Contract (`contracts/contracts/TraceProof.sol`)
+- Deployed on local Hardhat chain (`31337`) and Polygon Amoy testnet.
+- Packed EVM storage struct: `contentHash`, `sourceReference`, `timestamp`, `blockNumber`, `recordedBy`.
+- Write-once security: duplicate registration reverts with `EvidenceAlreadyExists`.
+- Fully tested with 96 Hardhat test suites passing.
 
 ---
 
@@ -120,16 +156,17 @@ cd trace
 ```bash
 cp .env.example .env
 ```
-Edit `.env` and provide your SerpAPI key (or Bing key):
+Edit `.env` with your API keys:
 ```env
 SEARCH_PROVIDER=serpapi
 SERPAPI_API_KEY=your_serpapi_key_here
+CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
 BLOCKCHAIN_RPC_URL=http://127.0.0.1:8545
 ```
 
-### 3. Deploy Local Blockchain & Smart Contract
+### 3. Start Local EVM Blockchain & Deploy Contract
 ```bash
-# Terminal 1: Start local EVM node
+# Terminal 1: Start local node
 cd contracts
 npm install
 npx hardhat node
@@ -137,20 +174,19 @@ npx hardhat node
 # Terminal 2: Deploy TraceProof.sol
 cd contracts
 npx hardhat run scripts/deploy.ts --network localhost
-# Note the printed contract address and ensure CONTRACT_ADDRESS in .env matches
 ```
 
-### 4. Start Backend API Server
+### 4. Start FastAPI Backend Server
 ```bash
-# Terminal 3: Launch FastAPI server
+# Terminal 3: Launch FastAPI
 cd ..
 pip install -r backend/requirements.txt
 python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 5. Start Frontend UI
+### 5. Start Next.js Frontend UI
 ```bash
-# Terminal 4: Launch Next.js App
+# Terminal 4: Launch Frontend
 cd frontend
 npm install
 npm run dev
@@ -162,22 +198,22 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ## 🎬 60-Second Screen Recording Demo Guide
 
-1. **Open TRACE**: Navigate to `http://localhost:3000`.
-2. **Upload Portrait**: Drop a publicly indexed portrait (e.g. from Wikipedia/news) into the dropzone.
+1. **Open TRACE**: Navigate to `http://localhost:3000` (or the [Live Vercel App](https://frontend-zeta-seven-zznxwxx7wg.vercel.app)).
+2. **Upload Portrait**: Drop a publicly indexed portrait (e.g., from Wikipedia, news, or public social media) into the dropzone.
 3. **Trigger Pipeline**: Click **BEGIN TRACE →**.
 4. **Observe Real-Time Timeline**:
-   - `✓ FACE ANALYSIS` (SCRFD bounding box & 512-d ArcFace embedding).
-   - `✓ WEB DISCOVERY` (Google Lens discovers public sources).
-   - `✓ CANDIDATE MATCHING` (Face cosine similarity ranking).
-   - `✓ CONTENT FINGERPRINT` (Deterministic SHA-256 generated).
-   - `✓ BLOCKCHAIN PROOF` (Transaction confirmed on EVM node).
-5. **Inspect Evidence**:
-   - Review side-by-side match comparison and similarity percentage.
-   - Click `VIEW SOURCE ↗` to inspect original online publication.
-   - Check block number, transaction hash, and SHA-256 digest blocks.
+   - `✓ FACE ANALYSIS`: SCRFD bounding box & 512-d ArcFace embedding extracted.
+   - `✓ WEB DISCOVERY`: Google Lens queries live web, filters out NSFW/scrapers, extracts candidate URLs.
+   - `✓ CANDIDATE MATCHING`: Downloads images (with thumbnail fallback for Instagram/walled gardens), calculates cosine similarity.
+   - `✓ CONTENT FINGERPRINT`: Deterministic SHA-256 composite hash generated.
+   - `✓ BLOCKCHAIN PROOF`: Transaction confirmed and notarized on EVM node / Polygon.
+5. **Inspect Discovered Evidence**:
+   - Review match percentage, face crop comparisons, and metadata.
+   - Click `VIEW SOURCE ↗` to verify original publication page.
+   - Inspect transaction hash, block number, and gas fee receipt.
 6. **Demonstrate Tamper Verification**:
-   - Re-upload the exact discovered image → **✓ VERIFIED (CONTENT INTEGRITY CONFIRMED)**.
-   - Slightly edit or re-save the image with 1 pixel changed → **⚠ CONTENT MODIFIED (FINGERPRINTS DO NOT MATCH)**.
+   - In the **Tamper Verification** tab, re-upload the exact image → **✓ VERIFIED (CONTENT INTEGRITY CONFIRMED)**.
+   - Re-upload a modified/tampered version → **⚠ CONTENT MODIFIED (FINGERPRINTS DO NOT MATCH)**.
 
 ---
 
@@ -187,16 +223,17 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 trace/
 ├── backend/                      # Python FastAPI application
 │   ├── app/
-│   │   ├── main.py               # API routes & orchestration
+│   │   ├── main.py               # API routes & orchestration (/api/trace, /api/tamper-check)
 │   │   ├── config.py             # Pydantic settings & env validation
 │   │   ├── ml/
-│   │   │   ├── face_engine.py    # InsightFace & ONNX ArcFace engine
+│   │   │   ├── face_engine.py    # InsightFace & ONNX ArcFace 512-d engine
 │   │   │   └── weights_loader.py # Model downloader & cache manager
 │   │   ├── search/
-│   │   │   ├── providers.py      # SerpAPI / Bing / Mock abstractions
-│   │   │   └── candidate_matcher.py # Visual comparison & ranking
+│   │   │   ├── providers.py      # Google Lens (SerpAPI) + Catbox ephemeral upload + Bing
+│   │   │   ├── domain_filter.py  # NSFW & adult domain filter + social prioritization
+│   │   │   └── candidate_matcher.py # Thumbnail fallback & cosine similarity ranking
 │   │   └── blockchain/
-│   │       ├── fingerprint.py    # RFC 8785 deterministic SHA-256
+│   │       ├── fingerprint.py    # RFC 8785 deterministic SHA-256 generator
 │   │       ├── chain_service.py  # Web3.py EVM contract interface
 │   │       └── abi/TraceProof.json
 │   └── requirements.txt
@@ -204,8 +241,8 @@ trace/
 ├── frontend/                     # Next.js 14 App Router
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── page.tsx          # Master investigation workflow
-│   │   │   ├── layout.tsx        # Poster typography & metadata
+│   │   │   ├── page.tsx          # 100% viewport-fit investigation dashboard
+│   │   │   ├── layout.tsx        # Next fonts & poster metadata
 │   │   │   └── globals.css       # Goa poster styling & tokens
 │   │   ├── components/
 │   │   │   ├── TraceLogo.tsx
@@ -237,10 +274,9 @@ trace/
 
 ## 🔒 Privacy & Limitations Disclaimer
 
-- **Prototype Context**: This software is a proof-of-concept for HH Goa 2026.
-- **Biometric Data**: Biometric embeddings require strict privacy considerations (GDPR, encryption at rest, explicit consent). Embeddings are never stored permanently in this prototype.
-- **Search Provider Rate Limits**: Reverse search latency depends on external search provider quotas and network availability.
-- **Scope**: Designed for visual verification and digital provenance, not autonomous surveillance or personal identification.
+- **Proof of Concept**: Built for Hackers House Goa 2026.
+- **Biometric Protection**: Facial embeddings are computed in-memory during investigation and are never persisted in a permanent biometric database.
+- **Forensic Scope**: TRACE is designed for content provenance, visual copyright verification, and source attribution — not autonomous surveillance or mass profiling.
 
 ---
 
