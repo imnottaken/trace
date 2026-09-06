@@ -20,7 +20,8 @@ export default function Home() {
   const [imagePreview, setImagePreview] = useState<string>("");
   const [traceResult, setTraceResult] = useState<TraceResult | null>(null);
   const [error, setError] = useState<string>("");
-  const [investigationId] = useState(() =>
+  const [resetKey, setResetKey] = useState<number>(0);
+  const [investigationId, setInvestigationId] = useState<string>(() =>
     Math.random().toString(36).slice(2, 8).toUpperCase()
   );
 
@@ -272,11 +273,16 @@ export default function Home() {
   }, [file, deriveTimelineSteps]);
 
   const handleReset = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
     setPhase("landing");
     setFile(null);
     setImagePreview("");
     setTraceResult(null);
     setError("");
+    setResetKey((k) => k + 1);
+    setInvestigationId(Math.random().toString(36).slice(2, 8).toUpperCase());
     setSteps([
       { id: "face", label: "Face Analysis", status: "queued" },
       { id: "search", label: "Web Discovery", status: "queued" },
@@ -345,6 +351,7 @@ export default function Home() {
               {/* Right Column: Upload Card */}
               <div className="lg:col-span-5 flex justify-center lg:justify-end">
                 <UploadZone
+                  key={resetKey}
                   onFileSelect={handleFileSelect}
                   onBeginTrace={handleBeginTrace}
                   disabled={phase !== "landing"}
@@ -389,8 +396,9 @@ export default function Home() {
                 </p>
                 <div className="mt-4">
                   <button
+                    type="button"
                     onClick={handleReset}
-                    className="px-6 py-2.5 bg-trace-yellow text-trace-ink font-mono font-black text-xs uppercase border-3 border-trace-ink shadow-[3px_3px_0px_#082F1C] hover:bg-trace-pink hover:text-white transition-all"
+                    className="px-6 py-2.5 bg-trace-yellow text-trace-ink font-mono font-black text-xs uppercase border-3 border-trace-ink shadow-[3px_3px_0px_#082F1C] hover:bg-trace-pink hover:text-white transition-all cursor-pointer"
                   >
                     ← TRY ANOTHER IMAGE
                   </button>
@@ -445,8 +453,9 @@ export default function Home() {
 
             <div className="text-center pt-6 border-t border-trace-yellow/20">
               <button
+                type="button"
                 onClick={handleReset}
-                className="px-8 py-3.5 bg-trace-yellow text-trace-ink font-display font-black text-lg uppercase border-3 border-trace-ink shadow-[5px_5px_0px_#082F1C] hover:bg-trace-pink hover:text-white transition-all"
+                className="px-8 py-3.5 bg-trace-yellow text-trace-ink font-display font-black text-lg uppercase border-3 border-trace-ink shadow-[5px_5px_0px_#082F1C] hover:bg-trace-pink hover:text-white transition-all cursor-pointer"
               >
                 NEW INVESTIGATION →
               </button>
