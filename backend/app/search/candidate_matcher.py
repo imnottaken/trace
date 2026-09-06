@@ -10,11 +10,11 @@ from typing import List, Optional
 
 import httpx
 import numpy as np
-
 from backend.app.ml.face_engine import FaceEngine, get_face_engine
 from backend.app.search.domain_filter import (
     extract_root_domain,
     get_domain_priority_boost,
+    is_safe_content,
     is_safe_domain,
     is_social_platform,
 )
