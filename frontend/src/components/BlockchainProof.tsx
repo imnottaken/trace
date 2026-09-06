@@ -12,19 +12,6 @@ interface BlockchainProofProps {
   gasUsed: number;
 }
 
-function getExplorerUrl(chainId: number, txHash: string): string | null {
-  switch (chainId) {
-    case 80002:
-      return `https://amoy.polygonscan.com/tx/0x${txHash.replace(/^0x/, "")}`;
-    case 137:
-      return `https://polygonscan.com/tx/0x${txHash.replace(/^0x/, "")}`;
-    case 1:
-      return `https://etherscan.io/tx/0x${txHash.replace(/^0x/, "")}`;
-    default:
-      return null;
-  }
-}
-
 function truncateHash(hash: string, chars: number = 8): string {
   const clean = hash.replace(/^0x/, "");
   if (clean.length <= chars * 2) return `0x${clean}`;
@@ -40,95 +27,76 @@ export default function BlockchainProof({
   timestamp,
   gasUsed,
 }: BlockchainProofProps) {
-  const explorerUrl = getExplorerUrl(chainId, txHash);
-
   return (
     <motion.div
-      className="w-full max-w-3xl mx-auto"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      className="w-full max-w-4xl mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
     >
-      <h2 className="font-display font-bold text-3xl text-trace-yellow mb-6 border-b-2 border-trace-yellow/30 pb-3">
-        PROOF
-      </h2>
+      <div className="border-b-3 border-trace-yellow pb-3 mb-6">
+        <h2 className="font-display font-black text-2xl sm:text-3xl text-trace-yellow uppercase tracking-tight">
+          ON-CHAIN PROVENANCE NOTARIZATION
+        </h2>
+      </div>
 
-      <div className="bg-trace-ink border-4 border-trace-yellow p-6 space-y-5">
-        {/* Status */}
-        <motion.div
-          className="flex items-center gap-3"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <span className="text-green-400 text-2xl">✓</span>
-          <span className="font-display font-bold text-xl text-green-400">
-            REGISTERED
+      <div className="bg-trace-ink border-3 border-trace-yellow p-6 sm:p-8 shadow-[8px_8px_0px_#082F1C]">
+        {/* Status Header */}
+        <div className="flex items-center justify-between border-b border-trace-yellow/20 pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <span className="w-4 h-4 bg-green-400 rounded-full inline-block animate-pulse" />
+            <span className="font-display font-bold text-xl sm:text-2xl text-green-400 uppercase tracking-wide">
+              IMMUTABLE EVIDENCE RECORDED
+            </span>
+          </div>
+          <span className="bg-trace-yellow text-trace-ink font-mono font-black text-xs px-3 py-1 uppercase shadow-[2px_2px_0px_#082F1C]">
+            {network}
           </span>
-        </motion.div>
+        </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <span className="font-mono text-xs text-trace-yellow/50 uppercase tracking-widest">
-              NETWORK
+        {/* Details Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="bg-trace-green/40 p-4 border border-trace-yellow/30 shadow-[3px_3px_0px_#082F1C]">
+            <span className="font-mono text-[10px] text-trace-yellow/60 font-bold uppercase tracking-wider block">
+              BLOCK NUMBER
             </span>
-            <p className="font-mono text-sm text-trace-yellow font-bold mt-1">
-              {network.toUpperCase()}
+            <p className="font-mono text-xl font-black text-trace-yellow mt-1">
+              #{blockNumber.toLocaleString()}
             </p>
           </div>
-          <div>
-            <span className="font-mono text-xs text-trace-yellow/50 uppercase tracking-widest">
-              BLOCK
+
+          <div className="bg-trace-green/40 p-4 border border-trace-yellow/30 shadow-[3px_3px_0px_#082F1C]">
+            <span className="font-mono text-[10px] text-trace-yellow/60 font-bold uppercase tracking-wider block">
+              GAS CONSUMED
             </span>
-            <p className="font-mono text-sm text-trace-yellow font-bold mt-1">
-              {blockNumber.toLocaleString()}
-            </p>
-          </div>
-          <div>
-            <span className="font-mono text-xs text-trace-yellow/50 uppercase tracking-widest">
-              TRANSACTION
-            </span>
-            <p className="font-mono text-xs text-trace-cream mt-1">
-              {truncateHash(txHash)}
-            </p>
-          </div>
-          <div>
-            <span className="font-mono text-xs text-trace-yellow/50 uppercase tracking-widest">
-              TIMESTAMP
-            </span>
-            <p className="font-mono text-xs text-trace-cream mt-1">
-              {new Date(timestamp * 1000).toISOString()}
-            </p>
-          </div>
-          <div>
-            <span className="font-mono text-xs text-trace-yellow/50 uppercase tracking-widest">
-              CONTRACT
-            </span>
-            <p className="font-mono text-xs text-trace-cream/60 mt-1">
-              {truncateHash(contractAddress)}
-            </p>
-          </div>
-          <div>
-            <span className="font-mono text-xs text-trace-yellow/50 uppercase tracking-widest">
-              GAS USED
-            </span>
-            <p className="font-mono text-xs text-trace-cream/60 mt-1">
+            <p className="font-mono text-xl font-black text-trace-yellow mt-1">
               {gasUsed.toLocaleString()}
             </p>
           </div>
-        </div>
 
-        {/* Explorer link */}
-        {explorerUrl && (
-          <a
-            href={explorerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-4 font-mono text-sm font-bold text-trace-pink underline hover:text-trace-yellow transition-colors"
-          >
-            VIEW ON-CHAIN PROOF ↗
-          </a>
-        )}
+          <div className="bg-trace-green/40 p-4 border border-trace-yellow/30 shadow-[3px_3px_0px_#082F1C]">
+            <span className="font-mono text-[10px] text-trace-yellow/60 font-bold uppercase tracking-wider block">
+              CHAIN ID
+            </span>
+            <p className="font-mono text-xl font-black text-trace-yellow mt-1">
+              {chainId}
+            </p>
+          </div>
+
+          <div className="sm:col-span-2 md:col-span-3 bg-trace-green/30 p-4 border border-trace-yellow/20 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <span className="font-mono text-[10px] text-trace-cream/60 uppercase">TRANSACTION HASH</span>
+              <span className="font-mono text-xs text-trace-cream font-bold">{truncateHash(txHash, 14)}</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-trace-yellow/10">
+              <span className="font-mono text-[10px] text-trace-cream/60 uppercase">CONTRACT ADDRESS</span>
+              <span className="font-mono text-xs text-trace-cream/70">{contractAddress}</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2 border-t border-trace-yellow/10">
+              <span className="font-mono text-[10px] text-trace-cream/60 uppercase">NOTARIZED TIMESTAMP</span>
+              <span className="font-mono text-xs text-trace-cream/70">{new Date(timestamp * 1000).toUTCString()}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );

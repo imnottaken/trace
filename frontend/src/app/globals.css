@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=JetBrains+Mono:wght@300;400;500;700&family=Tiro+Devanagari+Hindi:ital@0;1&display=swap');
-
 :root {
   --trace-green: #05472A;
   --trace-green-light: #006B3C;
@@ -15,38 +13,27 @@
 }
 
 body {
-  background-color: var(--trace-green);
-  color: var(--trace-yellow);
-  font-family: 'JetBrains Mono', monospace;
+  background-color: #05472A;
+  color: #F7E000;
+  font-family: var(--font-mono), monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Poster-style selection */
 ::selection {
-  background-color: var(--trace-pink);
-  color: var(--trace-ink);
-}
-
-/* Editorial borders */
-.border-trace {
-  border-color: var(--trace-yellow);
+  background-color: #FF0A87;
+  color: #FAFAF5;
 }
 
 /* Evidence block styling */
 .evidence-block {
-  background-color: var(--trace-cream);
-  color: var(--trace-ink);
-  border: 3px solid var(--trace-ink);
+  background-color: #F5E7A1;
+  color: #082F1C;
+  border: 3px solid #082F1C;
   padding: 1.5rem;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* Hash display */
-.hash-display {
-  font-family: 'JetBrains Mono', monospace;
-  word-break: break-all;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono), monospace;
+  box-shadow: 6px 6px 0px #082F1C;
 }
 
 /* Annotation dot */
@@ -55,35 +42,31 @@ body {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: var(--trace-pink);
-  margin-right: 8px;
+  background-color: #FF0A87;
+  flex-shrink: 0;
 }
 
 /* Upload zone */
 .upload-zone {
-  border: 3px dashed var(--trace-yellow);
-  transition: all 0.3s ease;
+  border: 3px dashed #F7E000;
+  background-color: rgba(8, 47, 28, 0.4);
+  transition: all 0.2s ease-in-out;
 }
 
 .upload-zone:hover,
 .upload-zone.drag-over {
-  border-color: var(--trace-pink);
-  background-color: rgba(255, 10, 135, 0.05);
+  border-color: #FF0A87;
+  background-color: rgba(255, 10, 135, 0.08);
 }
-
-/* Step status indicators */
-.step-queued { color: rgba(247, 224, 0, 0.4); }
-.step-scanning { color: var(--trace-yellow); }
-.step-complete { color: #00FF88; }
-.step-failed { color: var(--trace-pink); }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--trace-ink);
+  background: #082F1C;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--trace-yellow);
+  background: #F7E000;
+  border-radius: 0px;
 }

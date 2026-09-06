@@ -43,11 +43,11 @@ export default function UploadZone({ onFileSelect, onBeginTrace, disabled }: Upl
   );
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <motion.div
-        className={`upload-zone relative p-12 text-center cursor-pointer transition-all ${
+    <div className="w-full max-w-2xl">
+      <div
+        className={`upload-zone relative p-8 sm:p-12 text-center cursor-pointer transition-all shadow-[6px_6px_0px_#082F1C] ${
           dragOver ? "drag-over border-trace-pink" : "border-trace-yellow"
-        } ${preview ? "p-6" : "p-12"}`}
+        } ${preview ? "p-6" : ""}`}
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -55,8 +55,6 @@ export default function UploadZone({ onFileSelect, onBeginTrace, disabled }: Upl
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
         onClick={() => document.getElementById("file-input")?.click()}
-        whileHover={{ scale: 1.01 }}
-        transition={{ type: "spring", stiffness: 300 }}
       >
         <input
           id="file-input"
@@ -71,39 +69,40 @@ export default function UploadZone({ onFileSelect, onBeginTrace, disabled }: Upl
             <img
               src={preview}
               alt="Uploaded"
-              className="max-h-64 mx-auto border-2 border-trace-ink"
+              className="max-h-72 mx-auto border-3 border-trace-ink shadow-[4px_4px_0px_#082F1C]"
             />
-            <p className="font-mono text-xs text-trace-cream">
+            <div className="inline-block bg-trace-ink text-trace-cream px-3 py-1 font-mono text-xs border border-trace-yellow/30">
               {file?.name} · {((file?.size || 0) / 1024).toFixed(1)} KB
-            </p>
+            </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="text-6xl mb-4">⬡</div>
-            <p className="font-display font-bold text-2xl text-trace-yellow">
-              DROP YOUR IMAGE
+          <div className="space-y-4 py-4">
+            <div className="text-5xl text-trace-yellow">⬡</div>
+            <p className="font-display font-bold text-2xl sm:text-3xl text-trace-yellow uppercase tracking-tight">
+              DROP TARGET IMAGE
             </p>
-            <p className="font-mono text-sm text-trace-yellow/60">
-              or <span className="underline">CHOOSE FILE</span>
+            <p className="font-mono text-xs sm:text-sm text-trace-cream/70">
+              or <span className="underline text-trace-yellow font-bold">CLICK TO BROWSE</span>
+            </p>
+            <p className="font-mono text-[11px] text-trace-cream/50 uppercase tracking-wider mt-4">
+              Supports JPG, PNG, WebP · Single Face Portrait Recommended
             </p>
           </div>
         )}
-      </motion.div>
+      </div>
 
       {file && (
         <motion.button
-          className="w-full mt-6 py-4 bg-trace-yellow text-trace-ink font-display font-bold text-xl
-                     border-4 border-trace-ink hover:bg-trace-pink hover:text-white
-                     transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full mt-6 py-4 bg-trace-yellow text-trace-ink font-display font-black text-xl sm:text-2xl uppercase
+                     border-3 border-trace-ink shadow-[6px_6px_0px_#082F1C] hover:bg-trace-pink hover:text-white hover:translate-x-1 hover:translate-y-1 hover:shadow-[3px_3px_0px_#082F1C]
+                     transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={(e) => {
             e.stopPropagation();
             onBeginTrace();
           }}
           disabled={disabled}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
         >
           BEGIN TRACE →
         </motion.button>
