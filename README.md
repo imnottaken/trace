@@ -196,27 +196,6 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
 
-## 🎬 60-Second Screen Recording Demo Guide
-
-1. **Open TRACE**: Navigate to `http://localhost:3000` (or the [Live Vercel App](https://frontend-zeta-seven-zznxwxx7wg.vercel.app)).
-2. **Upload Portrait**: Drop a publicly indexed portrait (e.g., from Wikipedia, news, or public social media) into the dropzone.
-3. **Trigger Pipeline**: Click **BEGIN TRACE →**.
-4. **Observe Real-Time Timeline**:
-   - `✓ FACE ANALYSIS`: SCRFD bounding box & 512-d ArcFace embedding extracted.
-   - `✓ WEB DISCOVERY`: Google Lens queries live web, filters out NSFW/scrapers, extracts candidate URLs.
-   - `✓ CANDIDATE MATCHING`: Downloads images (with thumbnail fallback for Instagram/walled gardens), calculates cosine similarity.
-   - `✓ CONTENT FINGERPRINT`: Deterministic SHA-256 composite hash generated.
-   - `✓ BLOCKCHAIN PROOF`: Transaction confirmed and notarized on EVM node / Polygon.
-5. **Inspect Discovered Evidence**:
-   - Review match percentage, face crop comparisons, and metadata.
-   - Click `VIEW SOURCE ↗` to verify original publication page.
-   - Inspect transaction hash, block number, and gas fee receipt.
-6. **Demonstrate Tamper Verification**:
-   - In the **Tamper Verification** tab, re-upload the exact image → **✓ VERIFIED (CONTENT INTEGRITY CONFIRMED)**.
-   - Re-upload a modified/tampered version → **⚠ CONTENT MODIFIED (FINGERPRINTS DO NOT MATCH)**.
-
----
-
 ## 📦 Monorepo Structure
 
 ```
