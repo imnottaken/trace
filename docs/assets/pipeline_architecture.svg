@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 680" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&amp;family=JetBrains+Mono:wght@400;600;800&amp;display=swap');
+      .bg { fill: #05472A; }
+      .box { fill: #082F1C; stroke: #F7E000; stroke-width: 2.5; rx: 4; }
+      .box-active { fill: #F5E7A1; stroke: #082F1C; stroke-width: 3; rx: 4; }
+      .title { font-family: 'Playfair Display', serif; font-weight: 700; fill: #F7E000; font-size: 28px; }
+      .subtitle { font-family: 'JetBrains Mono', monospace; font-size: 13px; fill: #F5E7A1; }
+      .step-num { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 11px; fill: #FF0A87; }
+      .step-title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 18px; fill: #F7E000; }
+      .step-desc { font-family: 'JetBrains Mono', monospace; font-size: 12px; fill: #F5E7A1; opacity: 0.85; }
+      .arrow { stroke: #FF0A87; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#FF0A87" />
+    </marker>
+  </defs>
+
+  <rect width="1100" height="680" class="bg" />
+
+  <!-- Outer Border -->
+  <rect x="15" y="15" width="1070" height="650" fill="none" stroke="#F7E000" stroke-width="3" />
+  <rect x="23" y="23" width="1054" height="634" fill="none" stroke="#082F1C" stroke-width="5" />
+
+  <!-- Header -->
+  <text x="50" y="70" class="title">TRACE PIPELINE ARCHITECTURE</text>
+  <text x="50" y="95" class="subtitle">End-to-End Cryptographic Investigation &amp; Verification Protocol</text>
+
+  <!-- Row 1: Scan -> Search -> Match -->
+  <!-- Box 1 -->
+  <g transform="translate(50, 130)">
+    <rect width="280" height="150" class="box" />
+    <rect x="15" y="15" width="80" height="20" fill="#FF0A87" />
+    <text x="22" y="29" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="bold" fill="#FAFAF5">STEP 01</text>
+    <text x="15" y="60" class="step-title">FACE SCAN</text>
+    <text x="15" y="85" class="step-desc">InsightFace SCRFD detector</text>
+    <text x="15" y="105" class="step-desc">512-d ArcFace embedding</text>
+    <text x="15" y="125" class="step-desc">Single-face validation guard</text>
+  </g>
+
+  <!-- Arrow 1 -> 2 -->
+  <line x1="330" y1="205" x2="400" y2="205" class="arrow" />
+
+  <!-- Box 2 -->
+  <g transform="translate(410, 130)">
+    <rect width="280" height="150" class="box" />
+    <rect x="15" y="15" width="80" height="20" fill="#FF0A87" />
+    <text x="22" y="29" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="bold" fill="#FAFAF5">STEP 02</text>
+    <text x="15" y="60" class="step-title">WEB SEARCH</text>
+    <text x="15" y="85" class="step-desc">Google Lens via SerpAPI</text>
+    <text x="15" y="105" class="step-desc">Candidate URLs + metadata</text>
+    <text x="15" y="125" class="step-desc">Bing Visual fallback option</text>
+  </g>
+
+  <!-- Arrow 2 -> 3 -->
+  <line x1="690" y1="205" x2="760" y2="205" class="arrow" />
+
+  <!-- Box 3 -->
+  <g transform="translate(770, 130)">
+    <rect width="280" height="150" class="box" />
+    <rect x="15" y="15" width="80" height="20" fill="#FF0A87" />
+    <text x="22" y="29" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="bold" fill="#FAFAF5">STEP 03</text>
+    <text x="15" y="60" class="step-title">FACE MATCH</text>
+    <text x="15" y="85" class="step-desc">Download candidate images</text>
+    <text x="15" y="105" class="step-desc">Extract candidate embeddings</text>
+    <text x="15" y="125" class="step-desc">Rank by Cosine Similarity</text>
+  </g>
+
+  <!-- Arrow Down to Row 2 -->
+  <path d="M 910 280 L 910 340 L 910 370" class="arrow" />
+
+  <!-- Row 2: Verification <- Blockchain <- Fingerprint -->
+  <!-- Box 4 -->
+  <g transform="translate(770, 390)">
+    <rect width="280" height="150" class="box" />
+    <rect x="15" y="15" width="80" height="20" fill="#FF0A87" />
+    <text x="22" y="29" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="bold" fill="#FAFAF5">STEP 04</text>
+    <text x="15" y="60" class="step-title">FINGERPRINT</text>
+    <text x="15" y="85" class="step-desc">Raw image SHA-256</text>
+    <text x="15" y="105" class="step-desc">RFC 8785 canonical metadata</text>
+    <text x="15" y="125" class="step-desc">Deterministic 32-byte digest</text>
+  </g>
+
+  <!-- Arrow 4 -> 5 -->
+  <line x1="770" y1="465" x2="700" y2="465" class="arrow" />
+
+  <!-- Box 5 -->
+  <g transform="translate(410, 390)">
+    <rect width="280" height="150" class="box" />
+    <rect x="15" y="15" width="80" height="20" fill="#FF0A87" />
+    <text x="22" y="29" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="bold" fill="#FAFAF5">STEP 05</text>
+    <text x="15" y="60" class="step-title">BLOCKCHAIN</text>
+    <text x="15" y="85" class="step-desc">TraceProof.sol (EVM)</text>
+    <text x="15" y="105" class="step-desc">recordEvidence(bytes32, url)</text>
+    <text x="15" y="125" class="step-desc">Polygon Amoy / Localhost</text>
+  </g>
+
+  <!-- Arrow 5 -> 6 -->
+  <line x1="410" y1="465" x2="340" y2="465" class="arrow" />
+
+  <!-- Box 6 -->
+  <g transform="translate(50, 390)">
+    <rect width="280" height="150" class="box-active" />
+    <rect x="15" y="15" width="80" height="20" fill="#082F1C" />
+    <text x="22" y="29" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="bold" fill="#F5E7A1">STEP 06</text>
+    <text x="15" y="60" class="step-title" style="fill: #082F1C;">VERIFICATION</text>
+    <text x="15" y="85" class="step-desc" style="fill: #082F1C; font-weight: bold;">Re-query on-chain hash</text>
+    <text x="15" y="105" class="step-desc" style="fill: #082F1C;">Compare against local digest</text>
+    <text x="15" y="125" class="step-desc" style="fill: #082F1C; font-weight: bold;">✓ CONFIRM / ⚠ TAMPER</text>
+  </g>
+
+  <!-- Bottom Forensic Statement -->
+  <g transform="translate(50, 580)">
+    <rect width="1000" height="50" fill="#082F1C" stroke="#F7E000" stroke-width="1.5" />
+    <text x="20" y="30" font-family="'JetBrains Mono', monospace" font-size="12" fill="#F5E7A1">
+      <tspan fill="#FF0A87" font-weight="bold">CORE PRINCIPLE: </tspan>
+      Web search discovers content · Face recognition verifies visual match · Blockchain proves content integrity.
+    </text>
+  </g>
+</svg>
